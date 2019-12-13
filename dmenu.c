@@ -16,6 +16,8 @@
 #include <X11/extensions/Xinerama.h>
 #endif
 #include <X11/Xft/Xft.h>
+// #include <jansson.h>
+#include "jansson.h"
 
 #include "drw.h"
 #include "util.h"
@@ -36,6 +38,7 @@ struct item {
 	struct item *left, *right;
 	int out;
 	double distance;
+  json_t *json;
 };
 
 static char numbers[NUMBERSBUFSIZE] = "";
@@ -49,6 +52,8 @@ static unsigned int dmw = 0; /* make dmenu this wide */
 static int inputw = 0, promptw;
 static int lrpad; /* sum of left and right padding */
 static size_t cursor;
+static size_t items_sz = 0;
+static size_t items_ln = 0;
 static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
@@ -71,6 +76,18 @@ static size_t histsz;
 
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
 static char *(*fstrstr)(const char *, const char *) = strstr;
+
+static void listjson(json_t *obj);
+static json_t *json = NULL;
+
+static struct item *
+itemnew(void)
+{
+	if (items_ln + 1 >= (items_sz / sizeof *items))
+		if (!(items = realloc(items, (items_sz += BUFSIZ))))
+			die("cannot realloc %u bytes:", items_sz);
+	return &items[items_ln++];
+}
 
 static void
 appenditem(struct item *item, struct item **list, struct item **last)
@@ -357,6 +374,8 @@ match(void)
 	size_t len, textsize;
 	struct item *item, *lprefix, *lsubstr, *prefixend, *substrend;
 
+	if (json)
+		fstrstr = strcasestr;
 	strcpy(buf, text);
 	/* separate input text into tokens to be matched individually */
 	for (s = strtok(buf, " "); s; tokv[tokc - 1] = s, s = strtok(NULL, " "))
@@ -712,10 +731,26 @@ insert:
 		break;
 	case XK_Return:
 	case XK_KP_Enter:
+    // if json
+    if (sel && sel->json) {
+		  if (json_is_object(sel->json)) {
+				listjson(sel->json);
+				text[0] = '\0';
+				match();
+				drawmenu();
+				break;
+			} else {
+				puts(json_string_value(sel->json));
+			}
+		} else {
+    
+    // set flag accroding use_text_input or not
 		if (use_text_input)
       print_input_text_flg = (sel && (ev->state & ShiftMask));
 		else
       print_input_text_flg = (sel && !(ev->state & ShiftMask));
+    
+    // finally start pipeout
     if (print_input_text_flg) {
       if (sel->text[0] == startpipe[0]) {
         strncpy(sel->text + strlen(sel->text),pipeout,8);
@@ -729,6 +764,8 @@ insert:
         puts(text+1);
       }
         puts(text);
+    }
+
     }
 		if (!(ev->state & ControlMask)) {
 			savehistory((sel && !(ev->state & ShiftMask))
@@ -790,32 +827,71 @@ paste(void)
 }
 
 static void
+readjson(const char *path)
+{
+	json_error_t jerr;
+
+	if (!(json = json_load_file(path, 0, &jerr)))
+		die("%s @ line: %i - %s", jerr.text, jerr.line, path);
+}
+
+static void
+listjson(json_t *obj)
+{
+	void *iter;
+	unsigned imax = 0;
+	unsigned tmpmax = 0;
+	struct item *item;
+
+	items_ln = 0;
+	iter = json_object_iter(obj);
+	while (iter) {
+		item = itemnew();
+		item->text = (char*) json_object_iter_key(iter);
+		item->json = json_object_iter_value(iter);
+		item->out = 0;
+		drw_font_getexts(drw->fonts, item->text, strlen(item->text),
+				 &tmpmax, NULL);
+		if (tmpmax > inputw) {
+			inputw = tmpmax;
+			imax = items_ln - 1;
+		}
+		iter = json_object_iter_next(obj, iter);
+	}
+	if (items)
+		items[items_ln].text = NULL;
+	inputw = items ? TEXTW(items[imax].text) : 0;
+	lines = MIN(lines, items_ln - 1);
+}
+
+static void
 readstdin(void)
 {
 	char buf[sizeof text], *p;
-	size_t i, imax = 0, size = 0;
+	size_t i;
+	unsigned int imax = 0;
 	unsigned int tmpmax = 0;
+	struct item *item;
 
 	/* read each line from stdin and add it to the item list */
 	for (i = 0; fgets(buf, sizeof buf, stdin); i++) {
-		if (i + 1 >= size / sizeof *items)
-			if (!(items = realloc(items, (size += BUFSIZ))))
-				die("cannot realloc %u bytes:", size);
+		item = itemnew();
 		if ((p = strchr(buf, '\n')))
 			*p = '\0';
-		if (!(items[i].text = strdup(buf)))
+		if (!(item->text = strdup(buf)))
 			die("cannot strdup %u bytes:", strlen(buf) + 1);
-		items[i].out = 0;
+		item->json = NULL;
+		item->out = 0;
 		drw_font_getexts(drw->fonts, buf, strlen(buf), &tmpmax, NULL);
 		if (tmpmax > inputw) {
 			inputw = tmpmax;
-			imax = i;
+			imax = items_ln - 1;
 		}
 	}
 	if (items)
-		items[i].text = NULL;
+		items[items_ln].text = NULL;
 	inputw = items ? TEXTW(items[imax].text) : 0;
-	lines = MIN(lines, i);
+	lines = MIN(lines, items_ln);
 }
 
 static void
@@ -1050,7 +1126,9 @@ main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "-it")) {   /* embedding window id */
 			const char * text = argv[++i];
 			insert(text, strlen(text));
-		} else
+		} else if (!strcmp(argv[i], "-j"))
+			readjson(argv[++i]);
+    else
 			usage();
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
@@ -1076,9 +1154,15 @@ main(int argc, char *argv[])
 
 	if (fast && !isatty(0)) {
 		grabkeyboard();
-		readstdin();
+		if (json)
+			listjson(json);
+		else
+			readstdin();
 	} else {
-		readstdin();
+		if (json)
+			listjson(json);
+		else
+			readstdin();
 		grabkeyboard();
 	}
 	setup();
