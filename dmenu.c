@@ -616,6 +616,10 @@ paste(void)
 		insert(p, (q = strchr(p, '\n')) ? q - p : (ssize_t)strlen(p));
 		XFree(p);
 	}
+	if (incremental) {
+		puts(text);
+		fflush(stdout);
+	}
 	drawmenu();
 }
 
@@ -830,6 +834,8 @@ main(int argc, char *argv[])
 			fast = 1;
 		else if (!strcmp(argv[i], "-c"))   /* centers dmenu on screen */
 			centered = 1;
+	  else if (!strcmp(argv[i], "-r"))   /* incremental */
+   		incremental = 1;
 		else if (!strcmp(argv[i], "-F"))   /* fuzzy-matching to dmenu */
 			fuzzy = 0;
 		else if (!strcmp(argv[i], "-i")) { /* case-insensitive item matching */
