@@ -3,7 +3,7 @@
 dmenu \- dynamic menu
 .SH SYNOPSIS
 .B dmenu
-.RB [ \-bfinv ]
+.RB [ \-bfintv ]
 .RB [ \-l
 .IR lines ]
 .RB [ \-m
@@ -113,6 +113,12 @@ defines the selected background color.
 .BI \-sf " color"
 defines the selected foreground color.
 .TP
+.B \-t
+Return key prints input text instead of selection.
+.TP
+.B \-t
+Return key prints input text instead of selection.
+.TP
 .B \-v
 prints version information to stdout, then exits.
 .TP
@@ -130,13 +136,14 @@ Copy the selected item to the input field.
 .TP
 .B Return
 Confirm selection.  Prints the selected item to stdout and exits, returning
-success.
+success. If \-t option is given it confirms input instead of selection.
 .TP
 .B Ctrl-Return
 Confirm selection.  Prints the selected item to stdout and continues.
 .TP
 .B Shift\-Return
 Confirm input.  Prints the input text to stdout and exits, returning success.
+If \-t option is given it confirms selection instead of input.
 .TP
 .B Escape
 Exit without selecting an item, returning failure.
