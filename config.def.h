@@ -28,6 +28,7 @@ static int histnodup           = 1;	/* if 0, record repeated histories */
  * Characters not considered part of a word while deleting words
  * for example: " /?\"&[]"
  */
+static const char startpipe[] = "#";
 static const char worddelimiters[] = " ";
 
 /* Size of the window border */

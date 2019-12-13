@@ -41,6 +41,7 @@ struct item {
 static char numbers[NUMBERSBUFSIZE] = "";
 static char text[BUFSIZ] = "";
 static char *embed;
+static char pipeout[8] = " | dmenu";
 static int bh, mw, mh;
 static int dmx = -1; /* put dmenu at this x offset */
 static int dmy = -1; /* put dmenu at this y offset (measured from the bottom if topbar is 0) */
@@ -638,6 +639,8 @@ keypress(XKeyEvent *ev)
 		}
 	}
 
+  Bool print_input_text_flg;
+
 	switch(ksym) {
 	default:
 insert:
@@ -710,9 +713,23 @@ insert:
 	case XK_Return:
 	case XK_KP_Enter:
 		if (use_text_input)
-			puts((sel && (ev->state & ShiftMask)) ? sel->text : text);
+      print_input_text_flg = (sel && (ev->state & ShiftMask));
 		else
-			puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+      print_input_text_flg = (sel && !(ev->state & ShiftMask));
+    if (print_input_text_flg) {
+      if (sel->text[0] == startpipe[0]) {
+        strncpy(sel->text + strlen(sel->text),pipeout,8);
+        puts(sel->text+1);
+      }
+        puts(sel->text);
+    }
+    else {
+      if (text[0] == startpipe[0]) {
+        strncpy(text + strlen(text),pipeout,8);
+        puts(text+1);
+      }
+        puts(text);
+    }
 		if (!(ev->state & ControlMask)) {
 			savehistory((sel && !(ev->state & ShiftMask))
 				    ? sel->text : text);
