@@ -643,7 +643,7 @@ setup(void)
 					break;
 
 		x = info[i].x_org + dmx;
-		y = info[i].y_org + (topbar ? dmy : info[i].height - mh - dmy);
+		y = info[i].y_org + (topbar ? dmy : info[i].height - mh - dmy - 2*border_width);
 		mw = (dmw>0 ? dmw : info[i].width);
 		XFree(info);
 	} else
@@ -653,7 +653,7 @@ setup(void)
 			die("could not get embedding window attributes: 0x%lx",
 			    parentwin);
 		x = dmx;
-		y = topbar ? dmy : wa.height - mh - dmy;
+		y = topbar ? dmy : wa.height - mh - dmy - 2*border_width;
 		mw = (dmw>0 ? dmw : wa.width);
 	}
 	promptw = (prompt && *prompt) ? TEXTW(prompt) - lrpad / 4 : 0;
