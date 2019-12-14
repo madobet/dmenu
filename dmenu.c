@@ -653,9 +653,10 @@ setup(void)
 					break;
 
 		if (centered) {
-			mw = MIN(MAX(max_textw() + promptw, 100), info[i].width);
-			x = info[i].x_org + ((info[i].width  - mw) / 2);
-			y = info[i].y_org + ((info[i].height - mh) / 2);
+			mw = MIN(MAX(MAX(max_textw() + promptw, 100), dmw), info[i].width);
+      // A really "center" should minus border_width
+			x = info[i].x_org + ((info[i].width  - mw) / 2) - border_width;
+			y = info[i].y_org + ((info[i].height - mh) / 2) - border_width;
 		} else {
 		  x = info[i].x_org + dmx;
 		  y = info[i].y_org + (topbar ? dmy : info[i].height - mh - dmy - 2*border_width);
@@ -669,9 +670,10 @@ setup(void)
 			die("could not get embedding window attributes: 0x%lx",
 			    parentwin);
 		if (centered) {
-			mw = MIN(MAX(max_textw() + promptw, 100), wa.width);
-			x = (wa.width  - mw) / 2;
-			y = (wa.height - mh) / 2;
+			mw = MIN(MAX(MAX(max_textw() + promptw, 100), dmw), wa.width);
+      // A really "center" should minus border_width
+			x = (wa.width  - mw) / 2 - border_width;
+			y = (wa.height - mh) / 2 - border_width;
 		} else {
       x = dmx;
       y = topbar ? dmy : wa.height - mh - dmy - 2*border_width;
