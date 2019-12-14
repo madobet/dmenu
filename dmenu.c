@@ -37,8 +37,8 @@ struct item {
 static char text[BUFSIZ] = "";
 static char *embed;
 static int bh, mw, mh;
-static int dmx = 0; /* put dmenu at this x offset */
-static int dmy = 0; /* put dmenu at this y offset (measured from the bottom if topbar is 0) */
+static int dmx = -1; /* put dmenu at this x offset */
+static int dmy = -1; /* put dmenu at this y offset (measured from the bottom if topbar is 0) */
 static unsigned int dmw = 0; /* make dmenu this wide */
 static int inputw = 0, promptw;
 static int lrpad; /* sum of left and right padding */
@@ -655,10 +655,11 @@ setup(void)
 		if (centered) {
 			mw = MIN(MAX(MAX(max_textw() + promptw, 100), dmw), info[i].width);
       // A really "center" should minus border_width
-			x = info[i].x_org + ((info[i].width  - mw) / 2) - border_width;
-			y = info[i].y_org + ((info[i].height - mh) / 2) - border_width;
+      x = info[i].x_org + (dmx<0 ? ((info[i].width  - mw) / 2) - border_width : dmx);
+			y = info[i].y_org + (dmy<0 ? ((info[i].height - mh) / 2) - border_width : (topbar ? dmy : info[i].height - mh - dmy - 2*border_width));
 		} else {
-		  x = info[i].x_org + dmx;
+		  x = info[i].x_org + (dmx<0 ? 0 : dmx);
+      dmy = dmy<0 ? 0 : dmy;
 		  y = info[i].y_org + (topbar ? dmy : info[i].height - mh - dmy - 2*border_width);
 		  mw = (dmw>0 ? dmw : info[i].width);
 		}
@@ -672,10 +673,11 @@ setup(void)
 		if (centered) {
 			mw = MIN(MAX(MAX(max_textw() + promptw, 100), dmw), wa.width);
       // A really "center" should minus border_width
-			x = (wa.width  - mw) / 2 - border_width;
-			y = (wa.height - mh) / 2 - border_width;
+			x = dmx<0 ? (wa.width  - mw) / 2 - border_width : dmx;
+			y = dmy<0 ? (wa.height - mh) / 2 - border_width : (topbar ? dmy : wa.height - mh - dmy - 2*border_width);
 		} else {
-      x = dmx;
+      x = dmx<0 ? 0 : dmx;
+      dmy = dmy<0 ? 0 : dmy;
       y = topbar ? dmy : wa.height - mh - dmy - 2*border_width;
       mw = (dmw>0 ? dmw : wa.width);
 		}
