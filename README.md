@@ -2,6 +2,7 @@
 
 **dmenu** is an efficient dynamic menu for X.
 
+![screenshot.png](./screenshot.png)
 
 ## Requirements
 
