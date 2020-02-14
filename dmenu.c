@@ -1066,7 +1066,7 @@ read_Xresources(void) {
 	XrmInitialize();
 
 	char* xrm;
-	if ((xrm = XResourceManagerString(drw->dpy))) {
+	if ((xrm = XResourceManagerString(dpy))) {
 		char *type;
 		XrmDatabase xdb = XrmGetStringDatabase(xrm);
 		XrmValue xval;
@@ -1074,7 +1074,7 @@ read_Xresources(void) {
 		if (XrmGetResource(xdb, "dmenu.font", "*", &type, &xval) == True) /* font or font set */
 			fonts[0] = strdup(xval.addr);
 		if (XrmGetResource(xdb, "dmenu.background", "*", &type, &xval) == True)  /* normal background color */
-			colors[SchemeSel][ColBg] = strdup(xval.addr);
+			colors[SchemeNorm][ColBg] = strdup(xval.addr);
 		if (XrmGetResource(xdb, "dmenu.foreground", "*", &type, &xval) == True)  /* normal foreground color */
 			colors[SchemeNorm][ColFg] = strdup(xval.addr);
 		if (XrmGetResource(xdb, "dmenu.selbackground", "*", &type, &xval) == True)  /* selected background color */
@@ -1092,6 +1092,8 @@ main(int argc, char *argv[])
 	XWindowAttributes wa;
 	int i, fast = 0;
 
+	if (!(dpy = XOpenDisplay(NULL)))
+		die("cannot open display");
 	read_Xresources();
 	for (i = 1; i < argc; i++)
 		/* these options take no arguments */
@@ -1160,8 +1162,6 @@ main(int argc, char *argv[])
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
-	if (!(dpy = XOpenDisplay(NULL)))
-		die("cannot open display");
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 	if (!embed || !(parentwin = strtol(embed, NULL, 0)))
